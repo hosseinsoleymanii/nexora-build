@@ -11,7 +11,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -25,7 +25,7 @@ data class ServerConfig(
     val config: String
 )
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     private val panelApi = "https://nexora-two-mu.vercel.app/api/configs"
     private lateinit var listContainer: LinearLayout
