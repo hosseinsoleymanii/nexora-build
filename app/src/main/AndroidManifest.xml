@@ -1,0 +1,31 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <queries>
+        <package android:name="com.v2ray.ang" />
+        <package android:name="app.hiddify.com" />
+        <package android:name="moe.nb4a" />
+        <package android:name="io.nekohasekai.sfa" />
+        <package android:name="io.nekohasekai.sagernet" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="vless" />
+        </intent>
+    </queries>
+
+    <application
+        android:theme="@style/AppTheme"
+        android:label="Nexora VPN"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
