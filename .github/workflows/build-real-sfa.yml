@@ -91,6 +91,7 @@ jobs:
           LIBBOX_PATH="$(find . -name "libbox.aar" -type f | head -1)"
 
           cp "$LIBBOX_PATH" ../sfa/app/libs/libbox.aar
+          cp "$LIBBOX_PATH" ../sfa/app/libs/libbox-legacy.aar
 
           ls -lh ../sfa/app/libs/libbox.aar
 
