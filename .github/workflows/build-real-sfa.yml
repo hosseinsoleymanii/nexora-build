@@ -51,6 +51,10 @@ jobs:
           cd sing-box-core
           git submodule update --init --recursive
 
+      - name: Apply Nexora branding and panel defaults
+        run: |
+          python3 tools/patch_sfa.py sfa "$NEXORA_PANEL_URL"
+
       - name: Build libbox.aar
         run: |
           set -euxo pipefail
@@ -59,14 +63,15 @@ jobs:
 
           export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
 
-          if [ -z "${ANDROID_NDK_ROOT:-}" ]; then
+          if [ -d "$ANDROID_HOME/ndk/28.0.13004108" ]; then
+            export ANDROID_NDK_ROOT="$ANDROID_HOME/ndk/28.0.13004108"
+          elif [ -z "${ANDROID_NDK_ROOT:-}" ]; then
             export ANDROID_NDK_ROOT="$(find "$ANDROID_HOME/ndk" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)"
           fi
 
           export ANDROID_NDK_HOME="$ANDROID_NDK_ROOT"
 
           echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT"
-
           go version
 
           echo "Installing SagerNet gomobile..."
@@ -77,7 +82,7 @@ jobs:
 
           gomobile init
 
-          echo "Removing with_naive_outbound tag..."
+          echo "Removing with_naive_outbound tag to avoid Cronet linker issues..."
           grep -RIl "with_naive_outbound" ./cmd/internal ./cmd | xargs sed -i 's/,with_naive_outbound//g; s/with_naive_outbound,//g; s/with_naive_outbound//g' || true
 
           echo "Building libbox..."
@@ -89,22 +94,23 @@ jobs:
           mkdir -p ../sfa/app/libs
 
           LIBBOX_PATH="$(find . -name "libbox.aar" -type f | head -1)"
+          test -f "$LIBBOX_PATH"
 
           cp "$LIBBOX_PATH" ../sfa/app/libs/libbox.aar
           cp "$LIBBOX_PATH" ../sfa/app/libs/libbox-legacy.aar
 
-          ls -lh ../sfa/app/libs/libbox.aar
+          ls -lh ../sfa/app/libs/
 
-      - name: Build APK
+      - name: Build only modern APK variant
         working-directory: sfa
         run: |
           chmod +x ./gradlew || true
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew :app:assembleOtherDebug --stacktrace
 
       - name: Collect APKs
         run: |
           mkdir -p output
-          find sfa -type f -name "*.apk" -exec cp {} output/ \;
+          find sfa/app/build/outputs/apk -type f -name "*.apk" -print -exec cp {} output/ \;
           ls -la output
 
       - name: Upload APK artifact
