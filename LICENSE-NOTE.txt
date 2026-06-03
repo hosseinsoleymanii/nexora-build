@@ -1,0 +1,2 @@
+This builder clones and modifies SagerNet/sing-box-for-android during GitHub Actions.
+Check and comply with the upstream project's license before redistributing a branded APK.
