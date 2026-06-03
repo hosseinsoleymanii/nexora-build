@@ -1,0 +1,2 @@
+API set to: https://teachershow.ir/wp-json/nexora/v1/configs
+Admin token stays only in WordPress panel, not in the Android app.

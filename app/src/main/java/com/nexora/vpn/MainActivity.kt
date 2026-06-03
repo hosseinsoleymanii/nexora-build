@@ -30,7 +30,7 @@ data class ServerConfig(
 
 class MainActivity : Activity() {
 
-    private val panelApi = "https://nexora-two-mu.vercel.app/api/configs"
+    private val panelApi = "https://teachershow.ir/wp-json/nexora/v1/configs"
     private lateinit var listContainer: LinearLayout
     private lateinit var statusText: TextView
     private val servers = mutableListOf<ServerConfig>()
