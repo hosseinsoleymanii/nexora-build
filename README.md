@@ -1,9 +1,10 @@
 # Nexora VPN Importer
 
-این نسخه موتور داخلی VPN ندارد. کارش این است که کانفیگ‌ها را از پنل Vercel می‌گیرد و به برنامه‌هایی مثل v2rayNG، Hiddify، NekoBox یا SFA منتقل می‌کند.
+این نسخه بر اساس پروژه اصلی Nexora ساخته شده، با همان لوگو و همان پنل Vercel:
 
-Panel API:
 https://nexora-two-mu.vercel.app/api/configs
 
+اپ خودش VPN داخلی اجرا نمی‌کند. کانفیگ‌ها را از پنل می‌گیرد و با دکمه‌های Open/Share/Copy به برنامه‌هایی مثل v2rayNG، Hiddify، NekoBox یا SFA منتقل می‌کند.
+
 ## Build
-GitHub Actions → Build Nexora Importer APK → Run workflow
+در GitHub Actions workflow را Run کنید و APK را از Artifacts دانلود کنید.

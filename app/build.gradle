@@ -4,22 +4,22 @@ plugins {
 }
 
 android {
-    namespace 'com.nexora.importer'
+    namespace 'com.nexora.vpn'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.nexora.importer"
-        minSdk 23
+        applicationId "com.nexora.vpn"
+        minSdk 26
         targetSdk 35
         versionCode 1
         versionName "1.0"
     }
 
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
         }
-        debug {
+        release {
             minifyEnabled false
         }
     }
@@ -35,7 +35,6 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.15.0'
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.0.20'
 }

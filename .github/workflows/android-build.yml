@@ -1,4 +1,4 @@
-name: Build Nexora Importer APK
+name: Build Nexora APK
 
 on:
   workflow_dispatch:
@@ -7,25 +7,27 @@ on:
       - main
       - master
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout project
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Set up Gradle
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle 8.10.2
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
 
       - name: Build Debug APK
         run: gradle assembleDebug
@@ -33,5 +35,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexoraVPN-importer-apk
+          name: NexoraVPN-debug-apk
           path: app/build/outputs/apk/debug/*.apk
