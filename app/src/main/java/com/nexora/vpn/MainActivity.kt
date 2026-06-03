@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -18,12 +19,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLDecoder
 import kotlin.concurrent.thread
 
 data class ServerConfig(
     val name: String,
-    val country: String,
-    val remark: String,
+    val subtitle: String,
     val config: String
 )
 
@@ -48,17 +49,22 @@ class MainActivity : Activity() {
         }
 
         val logo = ImageView(this).apply {
-            try {
-                setImageResource(resources.getIdentifier("nexora_logo", "drawable", packageName))
-                adjustViewBounds = true
-                scaleType = ImageView.ScaleType.FIT_CENTER
-            } catch (_: Exception) {}
+            val resId = resources.getIdentifier("nexora_logo", "drawable", packageName)
+            if (resId != 0) {
+                setImageResource(resId)
+                visibility = View.VISIBLE
+            } else {
+                visibility = View.GONE
+            }
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
         }
+
         root.addView(logo, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             dp(96)
         ).apply {
-            setMargins(0, dp(10), 0, dp(10))
+            setMargins(0, dp(8), 0, dp(10))
         })
 
         val title = TextView(this).apply {
@@ -71,7 +77,7 @@ class MainActivity : Activity() {
         }
 
         val sub = TextView(this).apply {
-            text = "کانفیگ‌ها از پنل شما دریافت می‌شوند"
+            text = "کانفیگ‌ها از پنل نکسورا دریافت می‌شوند"
             textSize = 14f
             setTextColor(Color.parseColor("#9EB6D2"))
             gravity = Gravity.CENTER
@@ -118,9 +124,10 @@ class MainActivity : Activity() {
             try {
                 val conn = URL(panelApi).openConnection() as HttpURLConnection
                 conn.requestMethod = "GET"
-                conn.connectTimeout = 12000
-                conn.readTimeout = 12000
+                conn.connectTimeout = 15000
+                conn.readTimeout = 15000
                 conn.setRequestProperty("Accept", "application/json")
+                conn.setRequestProperty("Cache-Control", "no-cache")
 
                 val code = conn.responseCode
                 val body = if (code in 200..299) {
@@ -151,13 +158,12 @@ class MainActivity : Activity() {
         val result = mutableListOf<ServerConfig>()
         val trimmed = body.trim()
 
-        // Some panels return plain subscription text. Support that too.
         if (trimmed.contains("vless://") && !trimmed.startsWith("[") && !trimmed.startsWith("{")) {
             trimmed.lines()
                 .map { it.trim() }
                 .filter { it.startsWith("vless://") }
                 .forEachIndexed { index, line ->
-                    result.add(ServerConfig("سرور ${index + 1}", "🌐", extractNameFromVless(line, "سرور ${index + 1}"), line))
+                    result.add(ServerConfig(extractNameFromVless(line, "سرور ${index + 1}"), "", line))
                 }
             return result
         }
@@ -167,8 +173,8 @@ class MainActivity : Activity() {
             else -> {
                 val obj = JSONObject(trimmed)
                 when {
-                    obj.has("configs") -> obj.getJSONArray("configs")
                     obj.has("servers") -> obj.getJSONArray("servers")
+                    obj.has("configs") -> obj.getJSONArray("configs")
                     obj.has("data") -> obj.getJSONArray("data")
                     obj.has("items") -> obj.getJSONArray("items")
                     else -> JSONArray()
@@ -177,18 +183,21 @@ class MainActivity : Activity() {
         }
 
         for (i in 0 until arr.length()) {
-            val any = arr.get(i)
+            val value = arr.get(i)
 
-            if (any is String) {
-                val config = any.trim()
+            if (value is String) {
+                val config = value.trim()
                 if (config.startsWith("vless://")) {
-                    result.add(ServerConfig("سرور ${i + 1}", "🌐", extractNameFromVless(config, "سرور ${i + 1}"), config))
+                    result.add(ServerConfig(extractNameFromVless(config, "سرور ${i + 1}"), "", config))
                 }
                 continue
             }
 
             val item = arr.getJSONObject(i)
+            if (item.optBoolean("enabled", true) == false) continue
+
             val config = when {
+                item.has("uri") -> item.optString("uri")
                 item.has("config") -> item.optString("config")
                 item.has("url") -> item.optString("url")
                 item.has("link") -> item.optString("link")
@@ -199,18 +208,17 @@ class MainActivity : Activity() {
 
             if (!config.startsWith("vless://")) continue
 
-            val extracted = extractNameFromVless(config, "سرور ${i + 1}")
             val name = item.optString(
-                "name",
+                "title",
                 item.optString(
-                    "title",
-                    item.optString("remark", extracted)
+                    "name",
+                    item.optString("id", extractNameFromVless(config, "سرور ${i + 1}"))
                 )
             )
-            val country = item.optString("country", "🌐")
-            val remark = item.optString("remark", name)
 
-            result.add(ServerConfig(name, country, remark, config))
+            val subtitle = item.optString("subtitle", item.optString("remark", ""))
+
+            result.add(ServerConfig(name, subtitle, config))
         }
 
         return result
@@ -220,7 +228,7 @@ class MainActivity : Activity() {
         return try {
             val idx = config.indexOf("#")
             if (idx >= 0 && idx < config.length - 1) {
-                java.net.URLDecoder.decode(config.substring(idx + 1), "UTF-8")
+                URLDecoder.decode(config.substring(idx + 1), "UTF-8")
             } else fallback
         } catch (_: Exception) {
             fallback
@@ -231,7 +239,7 @@ class MainActivity : Activity() {
         listContainer.removeAllViews()
 
         if (servers.isEmpty()) {
-            statusText.text = "هیچ کانفیگ VLESS در پنل پیدا نشد."
+            statusText.text = "هیچ کانفیگ فعالی در پنل پیدا نشد."
             return
         }
 
@@ -245,15 +253,15 @@ class MainActivity : Activity() {
             }
 
             val title = TextView(this).apply {
-                text = "${server.country} ${server.name}"
+                text = server.name
                 textSize = 18f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.WHITE)
                 gravity = Gravity.RIGHT
             }
 
-            val remark = TextView(this).apply {
-                text = server.remark
+            val subtitle = TextView(this).apply {
+                text = if (server.subtitle.isBlank()) "آماده کپی" else server.subtitle
                 textSize = 13f
                 setTextColor(Color.parseColor("#9EB6D2"))
                 gravity = Gravity.RIGHT
@@ -266,7 +274,7 @@ class MainActivity : Activity() {
             }
 
             card.addView(title)
-            card.addView(remark)
+            card.addView(subtitle)
             card.addView(copyBtn)
 
             val params = LinearLayout.LayoutParams(
