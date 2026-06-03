@@ -1,17 +1,19 @@
 package com.nexora.vpn
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import android.app.Activity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -45,12 +47,27 @@ class MainActivity : Activity() {
             setPadding(dp(18), dp(18), dp(18), dp(18))
         }
 
+        val logo = ImageView(this).apply {
+            try {
+                setImageResource(resources.getIdentifier("nexora_logo", "drawable", packageName))
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            } catch (_: Exception) {}
+        }
+        root.addView(logo, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(96)
+        ).apply {
+            setMargins(0, dp(10), 0, dp(10))
+        })
+
         val title = TextView(this).apply {
-            text = "نکسورا وی‌پی‌ان"
+            text = "Nexora VPN"
             textSize = 28f
+            typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
-            setPadding(0, dp(20), 0, dp(6))
+            setPadding(0, dp(4), 0, dp(6))
         }
 
         val sub = TextView(this).apply {
@@ -114,7 +131,7 @@ class MainActivity : Activity() {
 
                 if (code !in 200..299) throw Exception(body)
 
-                val parsed = parseConfigs(body)
+                val parsed = parseConfigsFlexible(body)
 
                 runOnUiThread {
                     servers.clear()
@@ -130,9 +147,20 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun parseConfigs(body: String): List<ServerConfig> {
+    private fun parseConfigsFlexible(body: String): List<ServerConfig> {
         val result = mutableListOf<ServerConfig>()
         val trimmed = body.trim()
+
+        // Some panels return plain subscription text. Support that too.
+        if (trimmed.contains("vless://") && !trimmed.startsWith("[") && !trimmed.startsWith("{")) {
+            trimmed.lines()
+                .map { it.trim() }
+                .filter { it.startsWith("vless://") }
+                .forEachIndexed { index, line ->
+                    result.add(ServerConfig("سرور ${index + 1}", "🌐", extractNameFromVless(line, "سرور ${index + 1}"), line))
+                }
+            return result
+        }
 
         val arr: JSONArray = when {
             trimmed.startsWith("[") -> JSONArray(trimmed)
@@ -142,28 +170,41 @@ class MainActivity : Activity() {
                     obj.has("configs") -> obj.getJSONArray("configs")
                     obj.has("servers") -> obj.getJSONArray("servers")
                     obj.has("data") -> obj.getJSONArray("data")
+                    obj.has("items") -> obj.getJSONArray("items")
                     else -> JSONArray()
                 }
             }
         }
 
         for (i in 0 until arr.length()) {
+            val any = arr.get(i)
+
+            if (any is String) {
+                val config = any.trim()
+                if (config.startsWith("vless://")) {
+                    result.add(ServerConfig("سرور ${i + 1}", "🌐", extractNameFromVless(config, "سرور ${i + 1}"), config))
+                }
+                continue
+            }
+
             val item = arr.getJSONObject(i)
             val config = when {
                 item.has("config") -> item.optString("config")
                 item.has("url") -> item.optString("url")
                 item.has("link") -> item.optString("link")
                 item.has("vless") -> item.optString("vless")
+                item.has("value") -> item.optString("value")
                 else -> ""
             }.trim()
 
             if (!config.startsWith("vless://")) continue
 
+            val extracted = extractNameFromVless(config, "سرور ${i + 1}")
             val name = item.optString(
                 "name",
                 item.optString(
                     "title",
-                    item.optString("remark", "سرور ${i + 1}")
+                    item.optString("remark", extracted)
                 )
             )
             val country = item.optString("country", "🌐")
@@ -173,6 +214,17 @@ class MainActivity : Activity() {
         }
 
         return result
+    }
+
+    private fun extractNameFromVless(config: String, fallback: String): String {
+        return try {
+            val idx = config.indexOf("#")
+            if (idx >= 0 && idx < config.length - 1) {
+                java.net.URLDecoder.decode(config.substring(idx + 1), "UTF-8")
+            } else fallback
+        } catch (_: Exception) {
+            fallback
+        }
     }
 
     private fun renderServers() {
@@ -195,6 +247,7 @@ class MainActivity : Activity() {
             val title = TextView(this).apply {
                 text = "${server.country} ${server.name}"
                 textSize = 18f
+                typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.WHITE)
                 gravity = Gravity.RIGHT
             }
@@ -229,7 +282,7 @@ class MainActivity : Activity() {
 
     private fun copyConfig(config: String) {
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        cm.setPrimaryClip(ClipData.newPlainText("کانفیگ Nexora VPN", config))
+        cm.setPrimaryClip(ClipData.newPlainText("Nexora VPN Config", config))
         Toast.makeText(this, "کانفیگ کپی شد", Toast.LENGTH_SHORT).show()
     }
 
